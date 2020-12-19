@@ -1,10 +1,6 @@
 ---
 title: "Time series graphics"
-output:
-  word_document: default
-  pdf_document: default
-  html_document:
-    df_print: paged
+output: rmarkdown::github_document
 ---
 
 ### ts objects
@@ -50,13 +46,61 @@ ggseasonplot(a10, polar=TRUE) + ylab("$ million") +
 ```
 
 
+### Seasonal subseries plots
+```{r}
+ggsubseriesplot(a10) + ylab("$ million") +
+  ggtitle("Seasonal subseries plot: antidiabetic drug sales")
+```
+
+
+### Scatterplots
+```{r}
+library(fpp2)
+head(elecdemand)
+
+autoplot(elecdemand[,c("Demand","Temperature")], facets=TRUE) +
+  xlab("Year: 2014") + ylab("") +
+  ggtitle("Half-hourly electricity demand: Victoria, Australia")
+
+qplot(Temperature, Demand, data = as.data.frame(elecdemand)) + 
+  ylab("Demand (GW)") + xlab("Temperature (Celsius)")
+```
+
+
+```{r}
+autoplot(visnights[,1:5], facets=TRUE) +
+  ylab("Number of visitor nights each quarter (millions)")
+
+GGally::ggpairs(as.data.frame(visnights[,1:5]))
+```
+
+
+```{r}
+GGally::ggpairs(as.data.frame(visnights[,1:5]))
+```
 
 ```{r}
 
 ```
 
 
+```{r}
+
+```
+
 
 ```{r}
 
 ```
+
+
+```{r}
+
+```
+
+
+```{r}
+
+```
+
+

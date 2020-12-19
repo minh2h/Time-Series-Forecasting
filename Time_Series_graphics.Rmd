@@ -1,0 +1,60 @@
+---
+title: "Time series graphics"
+output:
+  html_document:
+    df_print: paged
+---
+
+### ts objects
+```{r}
+y <- ts(c(123,39,78,52,110), start=2012)
+y
+```
+
+### Time plots
+```{r}
+library(fpp)
+library(forecast)
+library(ggplot2)
+
+class(melsyd)
+head(melsyd)
+
+autoplot(melsyd[, "Economy.Class"]) + ggtitle("Economy class passengers: Melbourne-Sydney") +
+  xlab("Year") + ylab("in Thousands")
+```
+
+
+```{r}
+head(a10, 10)
+class(a10)
+
+autoplot(a10) + ggtitle("Antidiabetic drug sales") +
+  ylab("$ in million") + xlab("Year")
+```
+
+### Seasonal plots
+```{r}
+ggseasonplot(a10, year.labels = TRUE, year.labels.left = TRUE) + 
+    ylab("$ million") + ggtitle("Seasonal plot: antidiabetic drug sales")
+```
+
+The data from each season are overlapped.
+
+
+```{r}
+ggseasonplot(a10, polar=TRUE) + ylab("$ million") + 
+    ggtitle("Polar seasonal plot: antidiabetic drug sales")
+```
+
+
+
+```{r}
+
+```
+
+
+
+```{r}
+
+```

@@ -196,8 +196,50 @@ GGally::ggpairs(as.data.frame(visnights[,1:5]))
 
 ![](Time_Series_graphics_files/figure-gfm/unnamed-chunk-8-2.png)<!-- -->
 
+### Lag plots
+
 ``` r
-GGally::ggpairs(as.data.frame(visnights[,1:5]))
+beer2 <- window(ausbeer, start=1992)
+gglagplot(beer2, set.lags = 1:14)
 ```
 
 ![](Time_Series_graphics_files/figure-gfm/unnamed-chunk-9-1.png)<!-- -->
+
+### Autocorrelation
+
+``` r
+ggAcf(beer2)   # Correlogram
+```
+
+![](Time_Series_graphics_files/figure-gfm/unnamed-chunk-10-1.png)<!-- -->
+
+#### Trend and seasonality in ACF plots
+
+``` r
+aelec <- window(elec, start=1980)
+autoplot(aelec) + xlab("Year") + ylab("GWh")
+```
+
+![](Time_Series_graphics_files/figure-gfm/unnamed-chunk-11-1.png)<!-- -->
+
+``` r
+ggAcf(aelec, lag=48)
+```
+
+![](Time_Series_graphics_files/figure-gfm/unnamed-chunk-11-2.png)<!-- -->
+
+### White noise
+
+``` r
+set.seed(30)
+y <- ts(rnorm(50))
+autoplot(y) + ggtitle("White noise")
+```
+
+![](Time_Series_graphics_files/figure-gfm/unnamed-chunk-12-1.png)<!-- -->
+
+``` r
+ggAcf(y) + ggtitle("Autocorrelation function for the white noise series")
+```
+
+![](Time_Series_graphics_files/figure-gfm/unnamed-chunk-12-2.png)<!-- -->

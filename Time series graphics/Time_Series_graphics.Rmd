@@ -75,32 +75,31 @@ GGally::ggpairs(as.data.frame(visnights[,1:5]))
 ```
 
 
+### Lag plots
 ```{r}
-GGally::ggpairs(as.data.frame(visnights[,1:5]))
+beer2 <- window(ausbeer, start=1992)
+gglagplot(beer2, set.lags = 1:14)
 ```
 
+### Autocorrelation
 ```{r}
-
+ggAcf(beer2)   # Correlogram
 ```
 
-
+#### Trend and seasonality in ACF plots
 ```{r}
+aelec <- window(elec, start=1980)
+autoplot(aelec) + xlab("Year") + ylab("GWh")
 
-```
-
-
-```{r}
-
-```
-
-
-```{r}
-
+ggAcf(aelec, lag=48)
 ```
 
 
+### White noise
 ```{r}
+set.seed(30)
+y <- ts(rnorm(50))
+autoplot(y) + ggtitle("White noise")
 
+ggAcf(y) + ggtitle("Autocorrelation function for the white noise series")
 ```
-
-

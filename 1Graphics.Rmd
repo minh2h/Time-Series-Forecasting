@@ -1,0 +1,303 @@
+---
+title: "1Graphics"
+output: rmarkdown::github_document
+---
+
+# Basics of Time Series Objects
+The aim of this section is to get you familiar with time series objects in R. Unlike the standard objects such as lists, data frames, matrices and vectors, time series objects have various attributes associated with them.
+
+For this course, we will mainly be working with ts objects which are already in the base package. There are other types of time series objects such as xts and zoo, which have their own manipulation methods.
+
+Load the Singapore Real GDP (seasonally adjusted) dataset.
+
+```{r setup, message=FALSE}
+knitr::opts_chunk$set(message=FALSE)
+```
+
+```{r}
+gdp <- read.csv("SGRGDP.csv")
+head(gdp)
+```
+
+Notice that the left column contains the dates. While it is useful to note the start and end dates of the dataset, we can remove this column once we create the ts object.
+```{r}
+gdp.ts <- ts(gdp[,2], start=c(1975,1), end=c(2019,2), frequency=4)
+gdp.ts
+```
+Hence, ts objects contain both the series and assign the period as an attribute. The start and end dates should be specified using a vector containing the year and period within the year. The latter should be specified as the number of intervals in a year depending on the sampling frequency (1 for annual, 4 for quarterly, 12 for monthly, 52 for weekly, etc.). In this example, we have data from 1975Q1 to 2019Q2. Note that most functions using ts objects require integer frequency, thus we should not specify weekly frequency as 365.25/7=52.18.
+
+As with any analysis, we should always visualise the series first.
+```{r}
+library(gridExtra)
+library(fpp2)
+ptheme <- theme(aspect.ratio = 2/3, text=element_text(size=10), 
+                 axis.title = element_text(size=9))
+autoplot(gdp.ts) + ylab("Real GDP (Seasonally Adjusted)") + xlab("Year") + ptheme + ggtitle("Singapore Real GDP (Seasonally Adjusted)") 
+```
+
+The autoplot() function is versatile enough to recognise the type of object passed through it. In this example, it recognised the ts object and automatically generated a time series plot.
+
+To change the sample range by date, use the window() function. Note that you do not need to specify the frequency again. To change the range using observation numbers, use the subset() function:
+```{r}
+window(gdp.ts, start=c(2000,1))
+```
+
+```{r}
+subset(gdp.ts, start=1, end=100)
+```
+
+
+
+Write your own code below to (1) load the US Real GDP (Seasonally Adjusted) series from a csv file "USRGDP.csv", (2) create a ts object usgdp.ts; and (3) plot the series
+```{r}
+usgdp <- read.csv("USRGDP.csv")
+usgdp
+
+usgdp.ts <- ts(usgdp[,2], start=c(1947,1), end=c(2019,2), frequency=4)
+usgdp.ts
+
+autoplot(usgdp.ts) + ylab("US Real GDP (Seasonally Adjusted)") + xlab("Year") + ptheme + ggtitle("US Real GDP (Seasonally Adjusted)")
+```
+
+The following commands show how to create multivariate ts objects from single ts objects. Spot the differences in output.    
+```{r}
+a <- ts.union(usgdp.ts,gdp.ts)
+head(a) 
+```
+
+```{r}
+b <- ts.intersect(usgdp.ts,gdp.ts)
+head(b)
+```
+
+```{r}
+c <- ts(cbind(usgdp.ts,gdp.ts), start=start(usgdp.ts), end=end(usgdp.ts), frequency=4)
+head(c)
+```
+
+To lead or lag a series, we use the lag() function in ggplot2. It takes the ts object as the first argument and the lag $k$ as the second argument (-1 for lag 1, +1 for lead 1). Note that this function is **different from the lag() function in the base stats package**! 
+```{r}
+head(ts.union(gdp.ts, lag(gdp.ts,-1), lag(gdp.ts,1)))
+```
+
+## Reading & Plotting Multiple Time Series
+Consider the arrivals dataset (contained in the fpp2 package). It contains data on quarterly visitor arrivals (in thousands) to Australia from Japan, New Zealand, UK and the US.
+
+```{r}
+head(arrivals)
+```
+
+Create the ts object and plot the series using the facets argument in the autoplot function.
+```{r}
+arr.ts <- ts(arrivals, start=c(1981,1), end=c(2012,3), frequency=4)
+autoplot(arr.ts, facets=TRUE) +
+  ylab("Number of visitor arrivals (thousands)")
+```
+
+# Time Series Characteristics
+The figure below shows the weekly economy passenger load on Ansett Airlines between Sydney and Melbourne.
+```{r}
+autoplot(melsyd[,"Economy.Class"]) +
+  ggtitle("Economy class passengers: Melbourne-Sydney") + ptheme +
+  xlab("Year") +
+  ylab("Thousands")
+```
+
+
+This series has many characteristics common to time series:
+
+- An upward trend beginning in 1990.
+- Mechanical downward fluctuations in passenger load at the beginning of each year, possibly due to holidays.
+- Increasing volatility towards the end of the series.
+- Cyclical fluctuations about a trend.
+- Missing data towards the start of the series.
+- Outliers: Complete shutdown in 1989 due to an industrial dispute and much lower loads for a short period in 1992 due to a test phase where economy class seats were replaced by business class seats.
+
+## Time Series wuth Seasonal Component
+Explore the following Australian retail dataset. Select a series (one has been selected as the default) and note your observations on its characteristics.
+```{r}
+retaildata <- readxl::read_excel("retail.xlsx", skip=1)
+head(retaildata)
+```
+
+```{r}
+myts <- ts(retaildata[,"A3349873A"],
+  frequency=12, start=c(1982,4))
+myts
+```
+
+```{r}
+autoplot(myts) +
+  ggtitle("NSW Turnover: Other Retailing") + ptheme +
+  xlab("Year") +
+  ylab("Retail Sales")
+```
+
+## Seasonal Plots
+These plots are useful for identifying seasonalities in the data. The observations are grouped by month and ordered by year within each month. 
+
+The series for New South Wales "other retailing" sales shows increasing variance over time, thus we apply the log transformation. Differencing the resulting series removes the trend. Can you explain the differences in the seasonal plots for the log-transformed and the log-differenced series?
+
+```{r}
+myts <- ts(retaildata[,"A3349873A"], frequency=12, start=c(1982,4))
+
+p1 <- autoplot(log(myts)) +
+      ggtitle("Log NSW Turnover: Other Retailing") + ptheme +
+      xlab("Year") +
+      ylab("Log Retail Sales")
+
+p2 <- ggseasonplot(log(myts), year.labels=TRUE, year.labels.left=TRUE) +
+      ylab("Sales") + ptheme +
+      ggtitle("Seasonal plot: Log NSW Other Retailing Sales")
+
+grid.arrange(p1, p2, ncol=2)
+```
+
+```{r}
+p3 <- autoplot(diff(log(myts))) +
+  ggtitle("Log-Differenced NSW Turnover: Other Retailing") + ptheme +
+  xlab("Year") +
+  ylab("Log-Differenced Retail Sales")
+
+p4 <- ggseasonplot(diff(log(myts)), year.labels=TRUE, year.labels.left=TRUE) +
+  ylab("Sales") + ptheme +
+  ggtitle("Seasonal plot: Log-Differenced NSW Other Retailing Sales")
+
+grid.arrange(p3, p4, ncol=2)
+```
+
+Another version of the seasonal plot uses polar coordinates:
+```{r}
+ggseasonplot(diff(log(myts)),polar=TRUE) + theme(aspect.ratio = 4/5,text=element_text(size=12), 
+                 axis.title = element_text(size=11)) +
+  ylab("Sales") +
+  ggtitle("Polar seasonal plot: Log-Differenced NSW Other Retailing Sales")
+```
+
+Have a look at seasonal subseries plots, which are similar to seasonal plots except they clearly show any trend/changes within season. The horizontal lines indicate the average (across years) for each month.
+```{r}
+p1 <- ggsubseriesplot(log(myts)) +
+      ylab("Sales") + ptheme +
+      ggtitle("Seasonal Subseries plot: Log NSW Other Retailing Sales")
+
+p2 <- ggsubseriesplot(diff(log(myts))) +
+      ylab("Sales") + ptheme +
+      ggtitle("Seasonal Subseries plot: Log-Differenced NSW Other Retailing Sales")
+
+grid.arrange(p1,p2,ncol=2)
+```
+
+Questions: 
+
+1. Can you explain any differences between the seasonal subseries plots of the log-transformed and log-differenced series? 
+2. From both the seasonal and seasonal subseries plots, what can you conclude about the presence of seasonalities? 
+3. What are the assumptions made in detecting the presence of seasonalities?
+4. What are the possible reasons for the detected seasonalities?
+
+## Exercise 1
+Choose another Australian retail series "A3349563V", perform appropriate transformations and explore the seasonal plots.
+```{r}
+#Write your code here
+myts_2 <- ts(retaildata[,"A3349563V"],
+  frequency=12, start=c(1982,4))
+
+p1 <- autoplot(myts_2) +
+  ggtitle("Victoria Turnover: Other Retailing") + ptheme +
+  xlab("Year") +
+  ylab("Retail Sales")
+
+p2 <- autoplot(diff(log(myts_2))) +
+      ggtitle("Log-Differenced Victoria Turnover: Other Retailing") + ptheme +
+      xlab("Year") +
+      ylab("Log-Differenced Retail Sales")
+
+p3 <- ggseasonplot(diff(log(myts_2)), year.labels=TRUE, year.labels.left=TRUE) +
+      ylab("Sales") + ptheme +
+      ggtitle("Seasonal plot: Log-Differenced Victoria Other Retailing Sales")
+
+p4 <- ggsubseriesplot(diff(log(myts_2))) +
+      ylab("Sales") + ptheme +
+      ggtitle("Seasonal Subseries plot: Log-Differenced Victoria Other Retailing Sales")
+
+grid.arrange(p1,p2,p3,p4,ncol=2)
+```
+
+## Scatter Plots
+Scatter plots are useful to visualise relationships between time series as well as the correlations over time within individual time series. The following plots Singapore Real GDP vs. US Real GDP, pooling across all observations from different periods.
+```{r}
+qplot(usgdp.ts, gdp.ts, data=as.data.frame(b)) +
+  ylab("SG Real GDP (SGD million)") + xlab("US Real GDP (USD billion)")+
+  ggtitle("Singapore Real GDP vs. US Real GDP")+
+  geom_smooth(method = loess)
+```
+
+When we have related series, it is useful to visualise the pairwise correlations between series. The following shows five time series corresponding to the quarterly visitor arrivals in five different regions of New South Wales, Australia.
+```{r}
+autoplot(visnights[,1:5], facets=TRUE) +
+  ylab("Number of visitor nights each quarter (millions)")
+```
+
+The scatterplot matrix below shows the pairwise relationships between series. The variable on the y-axis is given by the variable name in the **row**, while the variable on the x-axis is given by the variable name in the **column**.
+```{r}
+library(GGally)
+ggpairs(as.data.frame(visnights[,1:5]), lower = list(continuous = wrap("smooth", size=0.5,color="blue")))
+```
+
+Questions:
+
+1. Are there any strong correlations between regions?
+2. Can you spot an outlier corresponding to the 2000 Sydney Olympics?
+
+For more details on how you can customise your scatter matrices, visit [this blog](https://www.blopig.com/blog/2019/06/a-brief-introduction-to-ggpairs/).
+
+
+Explore the correlations for Australian retail sales within the same category but between different regions, i.e. "A3349873A","A3349563V","A3349881A","A3349577J","A3349908R".
+```{r}
+ggpairs(as.data.frame(retaildata[,c("A3349873A","A3349563V","A3349881A","A3349577J","A3349908R")]), lower = list(continuous = wrap("smooth", size=0.5,color="red")))
+```
+
+## Autocorrelation
+Recall that the autocorrelation function (ACF) is $$\rho_k = \frac{Cov(Y_t,Y_{t-k})}{\sqrt{Var(Y_t)}\sqrt{Var(Y_{t-k})}}$$. The sample counterpart is $$\hat{\rho}_k = \frac{\sum_{t=k+1}^T (Y_t-\bar{Y})(Y_{t-k}-\bar{Y})}{\sum_{t=1}^T (Y_t-\bar{Y})^2}$$ where $T$ is the length of the time series.
+
+Often, we plot the sample ACF or *correlogram*.
+```{r}
+ggAcf(diff(log(gdp.ts))) + ggtitle("Correlogram for SG Real GDP Growth")
+```
+
+The dashed blue lines are the confidence bands at the 95% level (you can adjust this via the 'ci' argument).
+
+Observe the ACF of a trending series. Can you explain the pattern?
+```{r}
+ggAcf(log(gdp.ts)) + ggtitle("Correlogram for Log SG Real GDP")
+```
+
+Also observe the ACF of a de-trended series with seasonality.
+```{r}
+ggAcf(diff(log(myts))) + ggtitle("Correlogram for Log-Differenced SG Real GDP Growth")
+```
+
+Question: What causes the sharp spikes at lags 12 and 24?
+
+## Exercise 2
+Perform the same analysis of the ACF for NSW Other retailing sales series "A3349563V", with and without trend.
+
+```{r}
+myts_2 <- ts(retaildata[,"A3349563V"], frequency=12, start=c(1982,4))
+
+p1 <- ggAcf(log(myts_2)) +theme(text=element_text(size=11))+ ggtitle("Log Victoria Other Retailing Sales")
+p2 <- ggAcf(diff(log(myts_2))) + theme(text=element_text(size=10)) + ggtitle("Log-Differenced Victoria Other Retailing Sales")
+
+grid.arrange(p1, p2, ncol=2)
+```
+
+# White Noise
+The white noise process describes series which have purely random fluctuations. Therefore, the autocorrelations should be zero regardless of the lag interval. While we do not observe the true autocorrelations, we should expect the sample autocorrelations to be statistically insignificant and close to zero. In fact, 95% of the spikes in the sample ACF should lie within $\pm \frac{1.96}{\sqrt{T}}$.
+```{r}
+set.seed(30)
+y <- ts(rnorm(50))
+p1 <- autoplot(y) + ggtitle("White noise") + ptheme
+p2 <- ggAcf(y)+ptheme+ggtitle("")
+grid.arrange(p1,p2,ncol=2)
+```
+
+
